@@ -9,10 +9,30 @@ dotenv.config();
 
 const app = express();
 // app.use(cors());
-app.use(cors({
-  origin: ["http://localhost:5173", process.env.FRONTEND_URL],
-  credentials: true,
-}));
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      // allow requests with no origin (like Postman)
+      if (!origin) return cb(null, true);
+
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+
+      return cb(new Error("CORS blocked: " + origin), false);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// IMPORTANT: respond to preflight
+app.options("*", cors());
 
 app.use(express.json());
 
