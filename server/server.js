@@ -10,12 +10,19 @@ dotenv.config();
 const app = express();
 // app.use(cors());
 
+/* const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL,
+].filter(Boolean); */
+
 const allowedOrigins = [
   "http://localhost:5173",
+  "https://health-ops-portal.vercel.app",
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
-app.use(
+
+/* app.use(
   cors({
     origin: (origin, cb) => {
       // allow requests with no origin (like Postman)
@@ -30,7 +37,23 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+ */
 
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      // allow requests with no origin (Postman, server-to-server)
+      if (!origin) return cb(null, true);
+
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+
+      return cb(null, false); // block unknown origins silently
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 // IMPORTANT: respond to preflight
 /* app.options("*", cors());
 app.options("/*", cors()); */
