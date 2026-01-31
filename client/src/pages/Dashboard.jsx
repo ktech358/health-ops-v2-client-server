@@ -1,52 +1,110 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../api/axios";
 import { useAuth } from "../auth/AuthContext";
+
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Container,
+  Box,
+  Chip,
+  Paper,
+} from "@mui/material";
+
+import { DataGrid } from "@mui/x-data-grid";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const [claims, setClaims] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchClaims = async () => {
+    async function loadClaims() {
       try {
+        setLoading(true);
         const res = await api.get("/claims");
         setClaims(res.data);
-      } catch (err) {
-        console.error("Failed to fetch claims", err);
+      } finally {
+        setLoading(false);
       }
-    };
-
-    fetchClaims();
+    }
+    loadClaims();
   }, []);
 
+  const columns = useMemo(() => {
+    const base = [
+      { field: "id", headerName: "ID", width: 80 },
+      { field: "diagnosis", headerName: "Diagnosis", flex: 1, minWidth: 220 },
+      {
+        field: "amount",
+        headerName: "Amount",
+        width: 120,
+        valueFormatter: (params) => `$${Number(params.value).toLocaleString()}`,
+      },
+      {
+        field: "status",
+        headerName: "Status",
+        width: 140,
+      },
+      {
+        field: "createdAt",
+        headerName: "Created",
+        width: 170,
+        valueFormatter: (params) =>
+          params.value ? new Date(params.value).toLocaleString() : "",
+      },
+    ];
+
+    // Only show member email to OPS/ADMIN
+    if (user.role !== "MEMBER") {
+      base.splice(4, 0, {
+        field: "memberEmail",
+        headerName: "Member",
+        width: 240,
+        valueGetter: (params) => params.row?.member?.email || "",
+      });
+    }
+
+    return base;
+  }, [user.role]);
+
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Dashboard</h1>
+    <>
+      <AppBar position="static" elevation={0}>
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Health Ops Portal
+          </Typography>
+          <Button color="inherit" onClick={logout}>
+            Logout
+          </Button>
+        </Toolbar>
+      </AppBar>
 
-      <p>
-        Logged in as: <strong>{user.email}</strong> ({user.role})
-      </p>
+      <Container sx={{ mt: 4 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+          <Typography variant="h6">
+            Logged in as: {user.email}
+          </Typography>
+          <Chip label={user.role} />
+        </Box>
 
-      <button onClick={logout}>Logout</button>
-
-      <hr />
-
-      <h2>Claims</h2>
-
-      {claims.length === 0 && <p>No claims found</p>}
-
-      <ul>
-        {claims.map((claim) => (
-          <li key={claim.id}>
-            <strong>{claim.diagnosis}</strong> — ${claim.amount} —{" "}
-            {claim.status}
-
-            {user.role !== "MEMBER" && claim.member && (
-              <span> (Member: {claim.member.email})</span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
+        <Paper sx={{ height: 520, borderRadius: 3, overflow: "hidden" }}>
+          <DataGrid
+            rows={claims}
+            columns={columns}
+            loading={loading}
+            pageSizeOptions={[5, 10, 20]}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 10, page: 0 } },
+              sorting: { sortModel: [{ field: "id", sort: "desc" }] },
+            }}
+            disableRowSelectionOnClick
+          />
+        </Paper>
+      </Container>
+    </>
   );
 }
