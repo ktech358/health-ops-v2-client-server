@@ -32,33 +32,22 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    try {
-      const res = await api.post("/auth/login", { email, password });
+  try {
+    const res = await api.post("/auth/login", { email, password });
+    login(res.data);              // <-- ONLY THIS
+    navigate("/dashboard");
+  } catch {
+    setError("Invalid email or password");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      // keep your existing AuthContext behavior (localStorage-based)
-      // remember toggle is optional: minimal approach is to always store
-      if (!remember) {
-        // minimal "remember off": store for session only
-        sessionStorage.setItem("auth", JSON.stringify(res.data));
-        localStorage.removeItem("auth");
-      } else {
-        localStorage.setItem("auth", JSON.stringify(res.data));
-        sessionStorage.removeItem("auth");
-      }
-
-      login(res.data);
-      navigate("/dashboard");
-    } catch {
-      setError("Invalid email or password");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Box
