@@ -33,7 +33,7 @@ export default function Dashboard() {
     loadClaims();
   }, []);
 
-/*   const columns = useMemo(() => {
+  /*   const columns = useMemo(() => {
     const base = [
       { field: "id", headerName: "ID", width: 80 },
       { field: "diagnosis", headerName: "Diagnosis", flex: 1, minWidth: 220 },
@@ -71,37 +71,48 @@ export default function Dashboard() {
   }, [user.role]); */
 
   const columns = useMemo(() => {
-  const base = [
-    { field: "id", headerName: "ID", width: 80 },
-    { field: "diagnosis", headerName: "Diagnosis", flex: 1, minWidth: 220 },
-    {
-      field: "amount",
-      headerName: "Amount",
-      width: 120,
-      valueFormatter: (params) => `$${Number(params.value).toLocaleString()}`,
-    },
-    { field: "status", headerName: "Status", width: 140 },
-    {
-      field: "createdAt",
-      headerName: "Created",
-      width: 170,
-      valueFormatter: (params) =>
-        params.value ? new Date(params.value).toLocaleString() : "",
-    },
-  ];
+    const base = [
+      { field: "id", headerName: "ID", width: 80 },
+      { field: "diagnosis", headerName: "Diagnosis", flex: 1, minWidth: 220 },
+      {
+        field: "amount",
+        headerName: "Amount",
+        width: 130,
+        valueFormatter: (params) => {
+          const v = params.value;
+          const n =
+            typeof v === "number"
+              ? v
+              : typeof v === "string"
+                ? parseFloat(v)
+                : Number(v);
 
-  if (user.role !== "MEMBER") {
-    base.splice(4, 0, {
-      field: "memberEmail",
-      headerName: "Member",
-      width: 260,
-      sortable: false,
-      renderCell: (params) => params?.row?.member?.email || "",
-    });
-  }
+          if (Number.isNaN(n)) return "$0";
+          return `$${n.toLocaleString()}`;
+        },
+      },
+      { field: "status", headerName: "Status", width: 140 },
+      {
+        field: "createdAt",
+        headerName: "Created",
+        width: 170,
+        valueFormatter: (params) =>
+          params.value ? new Date(params.value).toLocaleString() : "",
+      },
+    ];
 
-  return base;
-}, [user.role]);
+    if (user.role !== "MEMBER") {
+      base.splice(4, 0, {
+        field: "memberEmail",
+        headerName: "Member",
+        width: 260,
+        sortable: false,
+        renderCell: (params) => params?.row?.member?.email || "",
+      });
+    }
+
+    return base;
+  }, [user.role]);
 
   return (
     <>
@@ -118,9 +129,7 @@ export default function Dashboard() {
 
       <Container sx={{ mt: 4 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-          <Typography variant="h6">
-            Logged in as: {user.email}
-          </Typography>
+          <Typography variant="h6">Logged in as: {user.email}</Typography>
           <Chip label={user.role} />
         </Box>
 
