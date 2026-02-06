@@ -27,29 +27,46 @@ enum ClaimStatus {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  role      Role
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  role     Role
 
-  claims    Claim[]  @relation("MemberClaims")
-  updated   Claim[]  @relation("UpdatedClaims")
+  claims    Claim[]    @relation("MemberClaims")
+  updated   Claim[]    @relation("UpdatedClaims")
+  auditLogs AuditLog[] @relation("UserAuditLogs")
 
   createdAt DateTime @default(now())
 }
 
 model Claim {
-  id           Int         @id @default(autoincrement())
-  diagnosis    String
-  amount       Float
-  status       ClaimStatus @default(SUBMITTED)
+  id        Int         @id @default(autoincrement())
+  diagnosis String
+  amount    Float
+  status    ClaimStatus @default(SUBMITTED)
 
-  memberId     Int
-  member       User        @relation("MemberClaims", fields: [memberId], references: [id])
+  memberId Int
+  member   User @relation("MemberClaims", fields: [memberId], references: [id])
 
-  updatedById  Int?
-  updatedBy    User?       @relation("UpdatedClaims", fields: [updatedById], references: [id])
+  updatedById Int?
+  updatedBy   User?      @relation("UpdatedClaims", fields: [updatedById], references: [id])
+  auditLogs   AuditLog[] @relation("ClaimAuditLogs")
 
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id Int @id @default(autoincrement())
+
+  claimId Int
+  claim   Claim @relation("ClaimAuditLogs", fields: [claimId], references: [id])
+
+  oldStatus ClaimStatus
+  newStatus ClaimStatus
+
+  changedBy Int
+  user      User @relation("UserAuditLogs", fields: [changedBy], references: [id])
+
+  createdAt DateTime @default(now())
 }

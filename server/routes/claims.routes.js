@@ -3,6 +3,7 @@ import { authenticate } from "../auth.js";
 import { requireRole } from "../roles.js";
 import { claims } from "../claims.js";
 import prisma from "../prisma/client.js";
+import { updateClaimStatus } from "../controllers/claim.controller.js";
 
 
 const router = express.Router();
@@ -68,6 +69,12 @@ router.patch(
   }
 );
 
+router.patch(
+  "/:id/status",
+  authenticate,
+  requireRole("ADMIN", "OPS"),
+  updateClaimStatus
+);
 
 
 router.post("/", authenticate, requireRole("MEMBER"), async (req, res) => {

@@ -11,6 +11,8 @@ import {
   Box,
   Chip,
   Paper,
+  Select,
+  MenuItem,
 } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
@@ -24,8 +26,7 @@ export default function Dashboard() {
     async function loadClaims() {
       try {
         setLoading(true);
-        const res = await api.get("/claims");
-        setClaims(res.data);
+        await refreshClaims();
       } finally {
         setLoading(false);
       }
@@ -70,6 +71,23 @@ export default function Dashboard() {
     return base;
   }, [user.role]); */
 
+  const NEXT = {
+    SUBMITTED: ["IN_REVIEW"],
+    IN_REVIEW: ["APPROVED", "DENIED"],
+    APPROVED: [],
+    DENIED: [],
+  };
+
+  const refreshClaims = async () => {
+    const res = await api.get("/claims");
+    setClaims(res.data);
+  };
+
+  const updateStatus = async (claimId, newStatus) => {
+    await api.patch(`/claims/${claimId}/status`, { status: newStatus });
+    await refreshClaims();
+  };
+
   const columns = useMemo(() => {
     const base = [
       { field: "id", headerName: "ID", width: 80 },
@@ -108,6 +126,41 @@ export default function Dashboard() {
         width: 260,
         sortable: false,
         renderCell: (params) => params?.row?.member?.email || "",
+      });
+    }
+
+    // OPS/ADMIN only: status update dropdown
+    if (user.role !== "MEMBER") {
+      base.push({
+        field: "updateStatus",
+        headerName: "Update Status",
+        width: 200,
+        sortable: false,
+        renderCell: (params) => {
+          const row = params?.row;
+          const options = NEXT[row?.status] || [];
+
+          if (!options.length) return "—";
+
+          return (
+            <Select
+              size="small"
+              value=""
+              displayEmpty
+              onChange={(e) => updateStatus(row.id, e.target.value)}
+              sx={{ width: 160 }}
+            >
+              <MenuItem value="" disabled>
+                Choose…
+              </MenuItem>
+              {options.map((s) => (
+                <MenuItem key={s} value={s}>
+                  {s}
+                </MenuItem>
+              ))}
+            </Select>
+          );
+        },
       });
     }
 
