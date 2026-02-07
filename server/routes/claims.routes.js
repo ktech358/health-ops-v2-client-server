@@ -1,30 +1,28 @@
 import express from "express";
+import prisma from "../prisma/client.js";
 import { authenticate } from "../auth.js";
 import { requireRole } from "../roles.js";
-import { claims } from "../claims.js";
-import prisma from "../prisma/client.js";
 import { updateClaimStatus } from "../controllers/claim.controller.js";
-
 
 const router = express.Router();
 
 /**
- * ADMIN + OPS → see all claims
- * MEMBER → see only their claims
+ * GET /claims
+ * ADMIN + OPS → all claims (include member)
+ * MEMBER → only their claims
  */
 router.get("/", authenticate, async (req, res) => {
   try {
-    let claims;
-
     if (req.user.role === "MEMBER") {
-      claims = await prisma.claim.findMany({
+      const claims = await prisma.claim.findMany({
         where: { memberId: req.user.id },
       });
-    } else {
-      claims = await prisma.claim.findMany({
-        include: { member: true },
-      });
+      return res.json(claims);
     }
+
+    const claims = await prisma.claim.findMany({
+      include: { member: true },
+    });
 
     res.json(claims);
   } catch (err) {
@@ -34,54 +32,14 @@ router.get("/", authenticate, async (req, res) => {
 });
 
 /**
- * ADMIN + OPS → update claim status
- * MEMBER → forbidden
+ * POST /claims
+ * MEMBER only
  */
-router.patch(
-  "/:id/status",
-  authenticate,
-  requireRole("ADMIN", "OPS"),
-  async (req, res) => {
-    try {
-      const { status } = req.body;
-
-      const claim = await prisma.claim.findUnique({
-        where: { id: Number(req.params.id) },
-      });
-
-      if (!claim) {
-        return res.status(404).json({ message: "Claim not found" });
-      }
-
-      const updated = await prisma.claim.update({
-        where: { id: claim.id },
-        data: {
-          status,
-          updatedById: req.user.id,
-        },
-      });
-
-      res.json(updated);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Failed to update claim" });
-    }
-  }
-);
-
-router.patch(
-  "/:id/status",
-  authenticate,
-  requireRole("ADMIN", "OPS"),
-  updateClaimStatus
-);
-
-
 router.post("/", authenticate, requireRole("MEMBER"), async (req, res) => {
   try {
     const { diagnosis, amount } = req.body;
 
-    if (!diagnosis || !amount) {
+    if (!diagnosis || amount === undefined) {
       return res.status(400).json({ message: "Missing fields" });
     }
 
@@ -100,6 +58,16 @@ router.post("/", authenticate, requireRole("MEMBER"), async (req, res) => {
   }
 });
 
-
+/**
+ * PATCH /claims/:id/status
+ * OPS + ADMIN only
+ * (this controller writes AuditLog)
+ */
+router.patch(
+  "/:id/status",
+  authenticate,
+  requireRole("ADMIN", "OPS"),
+  updateClaimStatus
+);
 
 export default router;

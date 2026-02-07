@@ -4,6 +4,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes.js";
 import claimsRoutes from "./routes/claims.routes.js";
+import auditRoutes from "./routes/audit.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 
 dotenv.config();
 
@@ -62,6 +64,8 @@ app.use(express.json());
 
 app.use("/auth", authRoutes);
 app.use("/claims", claimsRoutes);
+app.use("/audit-logs", auditRoutes);
+app.use("/admin", adminRoutes);
 
 app.get("/health", (req, res) => {
   res.json({ status: "OK" });

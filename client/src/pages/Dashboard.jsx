@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../api/axios";
 import { useAuth } from "../auth/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 import {
   AppBar,
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function loadClaims() {
@@ -177,6 +179,16 @@ export default function Dashboard() {
           <Button color="inherit" onClick={logout}>
             Logout
           </Button>
+          {user.role === "ADMIN" && (
+            <Button color="inherit" onClick={() => navigate("/audit-logs")}>
+              Audit Logs
+            </Button>
+          )}
+          {user.role === "ADMIN" && (
+            <Button color="inherit" onClick={() => navigate("/admin")}>
+              Analytics
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
 
